@@ -13,9 +13,7 @@
   "bbs_post_para.mbe": "bbs_post_para.json",
   "colosseum_event_battle.mbe": "colosseum_event_battle.json",
   "colosseum_item.mbe": "colosseum_item.json",
-  "custom_sound_bgm.mbe": "text.json",
-  "custom_sound_scene.mbe": "text.json",
-  "custom_sound[a-zA-Z0-9_]*\\.mbe": "custom_sound.json",
+  "custom_sound[a-zA-Z0-9_]*": "custom_sound.json",
   "debug_event_view.mbe": "debug_event_view.json",
   "degeneration_para.mbe": "evolution_next_para.json",
   "digiline_constant.mbe": "digiline_constant.json",
@@ -93,8 +91,7 @@
   "selectmapparam.mbe": "selectmapparam.json",
   "shop_para.mbe": "shop_para.json",
   "skill_use_group_set.mbe": "skill_use_group_set.json",
-  "subtitle_text.mbe": "text.json",
-  "subtitle[a-zA-Z0-9_]*\\.mbe": "subtitle.json",
+  "subtitle[a-zA-Z0-9_]*": "subtitle.json",
   "talk_position.mbe": "talk_position.json",
   "tp_table.mbe": "tp_table.json",
   "tutorial_para(_add)?.mbe": "tutorial_para.json",
@@ -107,7 +104,7 @@
   "text\\\\multi_select_text.mbe$": "text_para.json",
   "text\\\\tutorial_title.mbe$": "text_para.json",
   "text\\\\yes_no_message.mbe$": "text_para.json",
-  "text\\\\tournament_name.mbe$": "tournament_name.json",
-  "text\\\\[a-zA-Z0-9_]*\\.mbe$": "text.json",
-  "message\\\\[a-zA-Z0-9_]*\\.mbe$": "message.json"
+  "tournament_name.mbe$": "tournament_name.json",
+  "text\\\\[a-zA-Z0-9_]*$": "text.json",
+  "message\\\\[a-zA-Z0-9_]*$": "message.json"
 }

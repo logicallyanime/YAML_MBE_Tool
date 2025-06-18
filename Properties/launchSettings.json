@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "DSCS_MBE_Tool": {
+      "commandName": "Project",
+      "commandLineArgs": "mbeextract \"C:\\Users\\Tyler\\Desktop\\DSCS Rom\\resources\\DSDB\\DSDB\\mbe\\text\""
+    }
+  }
+}
