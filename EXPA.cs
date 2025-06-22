@@ -1,5 +1,6 @@
 ﻿using DSCS_MBE_Tool;
 using DSCS_MBE_Tool.Strucs;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections;
@@ -12,6 +13,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
+using static DSCS_MBE_Tool.NameDB;
 
 namespace DSCSTools.MBE
 {
@@ -66,16 +68,25 @@ namespace DSCSTools.MBE
                 return typeof(Message);
             }
 
-            var structure = JObject.Parse(File.ReadAllText("structures/structure.json"));
-            string formatFile = "";
-            foreach (var property in structure.Properties())
+            var thisAssembly = Assembly.GetExecutingAssembly();
+            using (var stream = thisAssembly.GetManifestResourceStream("DSCS_MBE_Tool.structure.json"))
             {
-                if (Regex.IsMatch(filename, property.Name))
+                using (var reader = new StreamReader(stream))
                 {
-                    formatFile = property.Value.ToString();
-                    throw new NotImplementedException($"Error: Structure matching for {filename} is not implemented yet.");
+                    string json = reader.ReadToEnd();
+                    var structure = JObject.Parse(json);
+                    string formatFile = "";
+                    foreach (var property in structure.Properties())
+                    {
+                        if (Regex.IsMatch(filename, property.Name))
+                        {
+                            formatFile = property.Value.ToString();
+                            throw new NotImplementedException($"Error: Structure matching for {filename} is not implemented yet.");
+                        }
+                    }
                 }
             }
+
 
 
             throw new Exception($"Error: No fitting structure file found for {sourcePath}");

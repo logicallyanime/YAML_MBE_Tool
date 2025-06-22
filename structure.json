@@ -98,13 +98,5 @@
   "ui_mon_param_info.mbe": "ui_mon_param_info.json",
   "warp_item_disable_para(_add)?.mbe": "warp_item_disable_para.json",
   "yes_no_window_para.mbe": "yes_no_window_para.json",
-  "text\\\\eden_group_text.mbe$": "text_para.json",
-  "text\\\\eden_text.mbe$": "text_para.json",
-  "text\\\\mirror_dungeon_text.mbe$": "text_para.json",
-  "text\\\\multi_select_text.mbe$": "text_para.json",
-  "text\\\\tutorial_title.mbe$": "text_para.json",
-  "text\\\\yes_no_message.mbe$": "text_para.json",
-  "tournament_name.mbe$": "tournament_name.json",
-  "text\\\\[a-zA-Z0-9_]*$": "text.json",
-  "message\\\\[a-zA-Z0-9_]*$": "message.json"
+  "tournament_name.mbe$": "tournament_name.json"
 }
