@@ -1,15 +1,7 @@
-﻿using DSCS_MBE_Tool.Properties;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using System;
-using System.Collections.Generic;
-using System.Formats.Asn1;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using static DSCS_MBE_Tool.NameDB;
 
 namespace DSCS_MBE_Tool
 {

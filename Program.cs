@@ -16,7 +16,7 @@ namespace DSCSTools
         [Option('v', "verbose", Default = false, HelpText = "Prints all messages to standard output.")]
         public bool Verbose { get; set; }
 
-        [Option('m', "smt", Default = false, HelpText = "Enables MultiThreading. (not working yet)")]
+        [Option('m', "smt", Default = false, HelpText = "Enables MultiThreading.")]
         public bool Multithreading { get; set; }
 
         [Option(Default = false, HelpText = "Disables the progress bar.")]
