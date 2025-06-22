@@ -1,4 +1,5 @@
 using System;
+using DSCS_MBE_Tool;
 
 namespace ConsoleProgress
 {
@@ -28,6 +29,10 @@ namespace ConsoleProgress
 
         private void Draw()
         {
+            if (Global.DisableProgressBar)
+            {
+                return;
+            }
             int percent = (int)((double)progress / total * 100);
             int barWidth = Console.WindowWidth - 20;
             int filledBar = (int)((double)barWidth * progress / total);

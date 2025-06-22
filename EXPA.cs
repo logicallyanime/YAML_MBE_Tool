@@ -10,10 +10,8 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
-using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace DSCSTools.MBE
 {
@@ -32,7 +30,7 @@ namespace DSCSTools.MBE
 
         private class EXPATable
         {
-            public byte[] TablePtr;
+            public required byte[] TablePtr;
             public int Offset;
 
             public uint NameSize() => BitConverter.ToUInt32(TablePtr, Offset);
@@ -52,10 +50,6 @@ namespace DSCSTools.MBE
             return (uint)((value - (offset % value)) % value);
         }
 
-        private static string WrapRegex(string input)
-        {
-            return $"^{input}$";
-        }
         private static Type GetStructureType(string sourcePath)
         {
             string filename = Path.GetFileNameWithoutExtension(sourcePath);
@@ -104,56 +98,56 @@ namespace DSCSTools.MBE
 
         public static void ExtractMBE(string sourcePath, string targetPath)
         {
-            
-
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($"[INFO] Input Path: {sourcePath}");
-            Console.ResetColor();
+            // Use WriteVerbose extension with color instead of direct Console calls.
+            $"[INFO] Input Path: {sourcePath}".WriteVerbose(ConsoleColor.Yellow);
 
             if (!Directory.Exists(sourcePath) && !File.Exists(sourcePath))
                 throw new ArgumentException($"Error: input path \"{sourcePath}\" does not exist.");
 
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine($"[STEP 1] Validating input path... {sourcePath}");
-            Console.ResetColor();
+            $"[STEP 1] Validating input path... {sourcePath}".WriteVerbose(ConsoleColor.Green);
 
             if (Path.GetFullPath(sourcePath) == Path.GetFullPath(targetPath))
                 throw new ArgumentException("Error: input and output paths must be different!");
 
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine($"[STEP 2] Paths validated successfully.");
-            Console.ResetColor();
+            $"[STEP 2] Paths validated successfully.".WriteVerbose(ConsoleColor.Green);
 
             if (Directory.Exists(sourcePath))
             {
-                Console.ForegroundColor = ConsoleColor.Blue;
-                Console.WriteLine($"[DIRECTORY] Processing directory: {sourcePath}");
-                Console.ResetColor();
+                $"[DIRECTORY] Processing directory: {sourcePath}".WriteVerbose(ConsoleColor.Blue);
                 string[] files = Directory.GetFiles(sourcePath);
                 ConsoleProgress.ProgressBar progressBar = new(files.Length);
                 int processedCount = 0;
-                foreach (var file in files)
+                if (Global.Multithreading)
                 {
-                    SaveYamlObj(file, targetPath);
-                    Console.ForegroundColor = ConsoleColor.Magenta;
-                    Console.WriteLine($"[FILE] Processed file: {file}");
-                    Console.ResetColor();
-                    processedCount++;
-                    progressBar.Report(processedCount);
+                    Parallel.ForEach(files, file =>
+                    {
+                        // Use a local variable to avoid race conditions
+                        MBETable localTable = EXPA.ParseYAML(file);
+                        EXPA.PackMBETable(localTable, file, targetPath);
+                        $"[FILE] Processed file: {file}".WriteVerbose(ConsoleColor.Magenta);
+                        int count = Interlocked.Increment(ref processedCount);
+                        progressBar.Report(count);
+                    });
+                }
+                else
+                {
+                    foreach (var file in files)
+                    {
+                        SaveYamlObj(file, targetPath);
+                        $"[FILE] Processed file: {file}".WriteVerbose(ConsoleColor.Magenta);
+                        processedCount++;
+                        progressBar.Report(processedCount);
+                    }
                 }
             }
             else if (File.Exists(sourcePath))
             {
-                Console.ForegroundColor = ConsoleColor.Blue;
-                Console.WriteLine($"[FILE] Processing single file: {sourcePath}");
-                Console.ResetColor();
+                $"[FILE] Processing single file: {sourcePath}".WriteVerbose(ConsoleColor.Blue);
                 SaveYamlObj(sourcePath, targetPath);
             }
             else
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"[ERROR] The source path is neither a directory nor a file: {sourcePath}");
-                Console.ResetColor();
+                $"[ERROR] The source path is neither a directory nor a file: {sourcePath}".WriteVerbose(ConsoleColor.Red);
                 throw new ArgumentException("Error: input is neither directory nor file.");
             }
         }
@@ -318,27 +312,6 @@ namespace DSCSTools.MBE
             }
         }
 
-
-        // private static JObject MatchStructureName(JObject format, string structureName, string sourceName)
-        // {
-        //     var formatValue = format[structureName];
-        //     if (formatValue == null)
-        //     {
-        //         // Scan all table definitions to find a matching regex expression, if any
-        //         foreach (var property in format.Properties())
-        //         {
-        //             if (Regex.IsMatch(structureName, WrapRegex(property.Name)))
-        //             {
-        //                 formatValue = property.Value as JObject;
-        //                 break;
-        //             }
-        //         }
-        //         if (formatValue == null)
-        //             throw new Exception($"Error: no definition for table {structureName} found. {sourceName}");
-        //     }
-        //     return formatValue as JObject;
-        // }
-
         private static string ReadEXPAEntry(byte[] data, ref int offset, string type)
         {
             try
@@ -401,396 +374,7 @@ namespace DSCSTools.MBE
             }
         }
 
-        //public static void PatchMBE(string mbeSourcePath, string mbePatchPath, string outputPath)
-        //{
-        //    // Process the source MBE file to get the original data
-        //    MBETable mbeSource = ProcessMBE(mbeSourcePath);
-
-        //    // Deserialize the YAML patch file
-        //    var deserializer = new DeserializerBuilder()
-        //                        .WithNamingConvention(CamelCaseNamingConvention.Instance)
-        //                        .Build();
-
-        //    var yamlContent = File.ReadAllText(mbePatchPath);
-        //    MBETable mbePatch = deserializer.Deserialize<MBETable>(yamlContent);
-
-        //    // Iterate through each table in the source
-        //    foreach (var table in mbeSource.Entries)
-        //    {
-        //        string tableName = table.Key;
-        //        List<IMBEClass> sourceEntries = table.Value;
-
-        //        // Check if the table exists in the source
-        //        if (mbePatch.Entries.ContainsKey(tableName))
-        //        {
-        //            var patchEntries = mbePatch.Entries[tableName];
-
-        //            if(patchEntries.Count != sourceEntries.Count)
-        //            {
-        //                throw new Exception($"Length Mismatch! Patch Length: {patchEntries.Count}; Source Length: {sourceEntries.Count}");
-        //            }
-                    
-        //            // Iterate through each entry in the patch table
-        //            for (int i = 0; i < patchEntries.Count; i++)
-        //            {
-        //                System.Object sourceEntry = sourceEntries[i];
-        //                System.Object patchEntry = patchEntries[i];
-        //                PropertyInfo[] sourceEntryProps = sourceEntry.GetType().GetProperties();
-        //                foreach (PropertyInfo prop in sourceEntryProps)
-        //                {
-        //                    var patchPropValue = prop.GetValue(patchEntry);
-        //                    if(patchPropValue == null) continue;
-        //                    prop.SetValue(patchEntry, patchPropValue);
-        //                }
-        //            }
-        //        }
-        //        else
-        //        {
-        //            // If the table doesn't exist in the source, add the entire table
-        //            throw new Exception($"Table '{tableName}' not found in source MBE file '{mbeSourcePath}'.");
-        //        }
-        //    }
-
-        //    // Now pack the updated data into a new MBE file using the PackMBE logic
-        //    //PackMBEFromDictionary(mbeSource, outputPath);
-        //}
-
-        private static void PackMBEFromDictionary(Dictionary<string, List<Dictionary<string, string>>> data, string outputPath)
-        {
-            // Input validation
-            if (string.IsNullOrEmpty(outputPath))
-                throw new ArgumentException("Error: output path cannot be null or empty.");
-
-            // Create target directory if it doesn't exist
-            Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
-
-            using (var output = new BinaryWriter(File.Open(outputPath, FileMode.Create)))
-            {
-                // Write EXPA Header
-                output.Write(Encoding.UTF8.GetBytes("EXPA"));
-                long numTablesPosition = output.BaseStream.Position;
-                output.Write((uint)0); // Placeholder for numTables
-
-                // This will store our string and array data that needs to be written in the CHNK section
-                var chnkData = new List<(string Type, string Data, uint Offset, string ErrorMsg)>();
-
-                uint numTables = 0;
-
-                // Process each table in the data
-                foreach (var table in data)
-                {
-                    string tableName = table.Key;
-                    var tableEntries = table.Value;
-
-                    // Calculate entry size based on the structure (assuming a fixed structure for simplicity)
-                    uint entrySize = 0;
-                    foreach (var entry in tableEntries.FirstOrDefault() ?? new Dictionary<string, string>())
-                    {
-                        entrySize += GetEntrySize("string", entrySize); // Assuming all fields are strings for simplicity
-                    }
-                    entrySize += Align(entrySize, 8);
-
-                    // Write table header
-                    var nameSize = ((tableName.Length + 4) / 4) * 4;
-                    var namePadding = new byte[nameSize];
-                    Encoding.UTF8.GetBytes(tableName).CopyTo(namePadding, 0);
-
-                    output.Write((uint)nameSize);
-                    output.Write(namePadding);
-                    output.Write(entrySize);
-                    output.Write((uint)tableEntries.Count);
-
-                    // Write padding after header if needed
-                    var headerPadding = new byte[Align(0x0C + nameSize, 8)];
-                    Array.Fill(headerPadding, PADDING_BYTE);
-                    output.Write(headerPadding);
-
-                    // Process each row in the table
-                    foreach (var row in tableEntries)
-                    {
-                        uint currentEntrySize = 0;
-
-                        foreach (var entry in row)
-                        {
-                            var columnName = entry.Key;
-                            var columnValue = entry.Value;
-
-                            try
-                            {
-                                // Assuming all fields are strings for simplicity
-                                WritePadding(output, ref currentEntrySize, 8);
-                                if (!string.IsNullOrEmpty(columnValue))
-                                {
-                                    chnkData.Add((
-                                        "string",
-                                        columnValue,
-                                        (uint)output.BaseStream.Position,
-                                        ""
-                                    ));
-                                }
-                                output.Write((long)0); // Placeholder for string pointer
-                                currentEntrySize += 8;
-                            }
-                            catch (Exception ex)
-                            {
-                                throw new InvalidOperationException(
-                                    $"Error packing {tableName}: " +
-                                    $"Value '{columnValue}' cannot be written for column '{columnName}'");
-                            }
-                        }
-
-                        // Write padding after entry if needed
-                        WritePadding(output, ref currentEntrySize, 8);
-                    }
-
-                    numTables++;
-                }
-
-                // Write CHNK header
-                output.Write(Encoding.UTF8.GetBytes("CHNK"));
-                output.Write((uint)chnkData.Count);
-
-                // Write CHNK data
-                foreach (var entry in chnkData)
-                {
-                    output.Write(entry.Offset);
-
-                    switch (entry.Type)
-                    {
-                        case "string":
-                            var stringBytesLength = Encoding.UTF8.GetBytes(entry.Data).Length;
-                            UInt32 paddingSize = (UInt32)((stringBytesLength + 5) / 4) * 4; // Calculate padded size
-                            output.Write((uint)paddingSize);
-
-                            // Create a byte array with the correct size and copy the string data
-                            var stringData = new byte[paddingSize];
-                            Encoding.UTF8.GetBytes(entry.Data).CopyTo(stringData, 0);
-                            output.Write(stringData);
-                            break;
-                    }
-                }
-
-                // Update numTables
-                output.Seek((int)numTablesPosition, SeekOrigin.Begin);
-                output.Write(numTables);
-            }
-        }
-
-        public static void PackMBE(string sourcePath, string targetPath)
-        {
-            //    // Input validation
-            //    if (!Directory.Exists(sourcePath))
-            //        throw new ArgumentException($"Error: input path \"{sourcePath}\" does not exist.");
-
-            //    if (Path.GetFullPath(sourcePath) == Path.GetFullPath(targetPath))
-            //        throw new ArgumentException("Error: input and output path must be different!");
-
-            //    if (!Directory.Exists(sourcePath))
-            //        throw new ArgumentException("Error: input path is not a directory.");
-
-            //    // Create target directory if it doesn't exist
-            //    Directory.CreateDirectory(Path.GetDirectoryName(targetPath));
-
-            //    using (var output = new BinaryWriter(File.Open(targetPath, FileMode.Create)))
-            //    {
-            //        var format = GetStructureFile(sourcePath);
-
-            //        // Write EXPA Header
-            //        output.Write(Encoding.UTF8.GetBytes("EXPA"));
-            //        long numTablesPosition = output.BaseStream.Position;
-            //        output.Write((uint)0); // Placeholder for numTables
-
-            //        // This will store our string and array data that needs to be written in the CHNK section
-            //        var chnkData = new List<(string Type, string Data, uint Offset, string ErrorMsg)>();
-
-            //        // Find and sort YAML files
-            //        var sortedFiles = new List<List<string>>();
-            //        foreach (var formatProperty in format.Properties())
-            //        {
-            //            var regex = new Regex(WrapRegex(formatProperty.Name));
-            //            var matchingFiles = Directory.GetFiles(sourcePath, "*.yaml")
-            //                .Where(f => regex.IsMatch(Path.GetFileNameWithoutExtension(f)))
-            //                .ToList();
-            //            matchingFiles.Sort();
-            //            sortedFiles.Add(matchingFiles);
-            //        }
-
-            //        uint numTables = 0;
-
-            //        // Process each table format
-            //        for (int i = 0; i < sortedFiles.Count; i++)
-            //        {
-            //            var localFormat = format.Properties().ElementAt(i).Value as JObject;
-            //            var filelist = sortedFiles[i];
-
-            //            foreach (var file in filelist)
-            //            {
-            //                numTables++;
-            //                var filename = Path.GetFileNameWithoutExtension(file);
-
-            //                // Deserialize YAML file
-            //                var deserializer = new DeserializerBuilder()
-            //                    .WithNamingConvention(CamelCaseNamingConvention.Instance)
-            //                    .Build();
-
-            //                var yamlContent = File.ReadAllText(file);
-            //                var yamlData = deserializer.Deserialize<Dictionary<string, List<Dictionary<string, string>>>>(yamlContent);
-
-            //                foreach (var table in yamlData)
-            //                {
-            //                    // Write EXPA Table header
-            //                    var nameSize = ((table.Key.Length + 4) / 4) * 4;
-            //                    var namePadding = new byte[nameSize];
-            //                    Encoding.UTF8.GetBytes(table.Key).CopyTo(namePadding, 0);
-
-            //                    // Calculate entry size
-            //                    uint entrySize = 0;
-            //                    foreach (var formatEntry in localFormat.Properties())
-            //                    {
-            //                        entrySize += GetEntrySize(formatEntry.Value.ToString(), entrySize);
-            //                    }
-            //                    entrySize += Align(entrySize, 8);
-
-            //                    // Write table header
-            //                    output.Write((uint)nameSize);
-            //                    output.Write(namePadding);
-            //                    output.Write(entrySize);
-            //                    output.Write((uint)table.Value.Count);
-
-            //                    // Write padding after header if needed
-            //                    var headerPadding = new byte[Align(0x0C + nameSize, 8)];
-            //                    Array.Fill(headerPadding, PADDING_BYTE);
-            //                    output.Write(headerPadding);
-
-            //                    // Process each row in the table
-            //                    foreach (var row in table.Value)
-            //                    {
-            //                        uint currentEntrySize = 0;
-
-            //                        foreach (var formatEntry in localFormat.Properties())
-            //                        {
-            //                            var columnName = formatEntry.Name;
-            //                            var columnType = formatEntry.Value.ToString();
-            //                            var columnValue = row.GetValueOrDefault(columnName, "");
-
-            //                            try
-            //                            {
-            //                                switch (columnType)
-            //                                {
-            //                                    case "byte":
-            //                                        output.Write(Convert.ToByte(columnValue));
-            //                                        currentEntrySize += 1;
-            //                                        break;
-
-            //                                    case "short":
-            //                                        WritePadding(output, ref currentEntrySize, 2);
-            //                                        output.Write(Convert.ToInt16(columnValue));
-            //                                        currentEntrySize += 2;
-            //                                        break;
-
-            //                                    case "int":
-            //                                        WritePadding(output, ref currentEntrySize, 4);
-            //                                        output.Write(Convert.ToInt32(columnValue));
-            //                                        currentEntrySize += 4;
-            //                                        break;
-
-            //                                    case "float":
-            //                                        WritePadding(output, ref currentEntrySize, 4);
-            //                                        output.Write(Convert.ToSingle(columnValue, CultureInfo.InvariantCulture));
-            //                                        currentEntrySize += 4;
-            //                                        break;
-
-            //                                    case "string":
-            //                                        WritePadding(output, ref currentEntrySize, 8);
-            //                                        if (!string.IsNullOrEmpty(columnValue))
-            //                                        {
-            //                                            chnkData.Add((
-            //                                                columnType,
-            //                                                columnValue,
-            //                                                (uint)output.BaseStream.Position,
-            //                                                ""
-            //                                            ));
-            //                                        }
-            //                                        output.Write((long)0); // Placeholder for string pointer
-            //                                        currentEntrySize += 8;
-            //                                        break;
-
-            //                                    case "int array":
-            //                                        WritePadding(output, ref currentEntrySize, 8);
-            //                                        if (!string.IsNullOrEmpty(columnValue))
-            //                                        {
-            //                                            chnkData.Add((
-            //                                                columnType,
-            //                                                columnValue,
-            //                                                (uint)output.BaseStream.Position + 8,
-            //                                                $"Error packing {Path.GetFileName(sourcePath)}/{filename}: Value '{columnValue}' cannot be converted to 'int array'"
-            //                                            ));
-            //                                        }
-
-            //                                        var arraySize = !string.IsNullOrEmpty(columnValue) 
-            //                                            ? columnValue.Split(' ').Length 
-            //                                            : 0;
-
-            //                                        output.Write(arraySize);
-            //                                        output.Write(new byte[4]); // Padding
-            //                                        output.Write((long)0); // Placeholder for array pointer
-            //                                        currentEntrySize += 16;
-            //                                        break;
-            //                                }
-            //                            }
-            //                            catch (Exception ex)
-            //                            {
-            //                                throw new InvalidOperationException(
-            //                                    $"Error packing {Path.GetFileName(sourcePath)}/{filename}: " +
-            //                                    $"Value '{columnValue}' cannot be converted to '{columnType}' " +
-            //                                    $"in column '{columnName}'");
-            //                            }
-            //                        }
-
-            //                        // Write padding after entry if needed
-            //                        WritePadding(output, ref currentEntrySize, 8);
-            //                    }
-            //                }
-            //            }
-            //        }
-
-            //        // Write CHNK header
-            //        output.Write(Encoding.UTF8.GetBytes("CHNK"));
-            //        output.Write((uint)chnkData.Count);
-
-            //        // Write CHNK data
-            //        foreach (var entry in chnkData)
-            //        {
-            //            output.Write(entry.Offset);
-
-            //            switch (entry.Type)
-            //            {
-            //                case "string":
-            //                    var stringSize = ((entry.Data.Length + 5) / 4) * 4;
-            //                    output.Write((uint)stringSize);
-            //                    var stringData = new byte[stringSize];
-            //                    Encoding.UTF8.GetBytes(entry.Data).CopyTo(stringData, 0);
-            //                    output.Write(stringData);
-            //                    break;
-
-            //                case "int array":
-            //                    var numbers = entry.Data.Split(' ').Select(n => Convert.ToInt32(n)).ToArray();
-            //                    output.Write((uint)(numbers.Length * 4));
-            //                    foreach (var number in numbers)
-            //                    {
-            //                        output.Write(number);
-            //                    }
-            //                    break;
-            //            }
-            //        }
-
-            //        // Update numTables
-            //        output.Seek((int)numTablesPosition, SeekOrigin.Begin);
-            //        output.Write(numTables);
-            //    }
-        }
-
-        // Helper method to write padding bytes
+        
         private static void WritePadding(BinaryWriter writer, ref uint currentSize, uint alignment)
         {
             var paddingSize = Align(currentSize, alignment);
@@ -1015,7 +599,7 @@ namespace DSCSTools.MBE
                                 throw new InvalidOperationException(
                                     $"Error packing {Path.GetFileName(sourcePath)}/{Path.GetFileName(sourcePath)}: " +
                                     $"Value '{propValue}' cannot be converted to '{propType}' " +
-                                    $"in column '{propName}'");
+                                    $"in column '{propName}'\n" + ex);
                             }
                         }
 

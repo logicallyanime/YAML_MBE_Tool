@@ -35,8 +35,8 @@ namespace DSCS_MBE_Tool.Strucs
 
     public class PatchText: IMBEClass
     {
-        public string id { get; set; }
-        public Dictionary<string, string> msg { get; set; }
+        public required string id { get; set; }
+        public required Dictionary<string, string> msg { get; set; }
         public Text ToText()
         {
             Text text = new Text

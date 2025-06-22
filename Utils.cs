@@ -18,8 +18,8 @@ namespace DSCS_MBE_Tool
         static NameDB()
         {
             string json = File.ReadAllText("nameDB.json");
-            Names = JsonConvert.DeserializeObject<Dictionary<String, List<SpeakerName>>>(json, Converter.Settings)["Names"]
-                ?? throw new InvalidOperationException("Failed to deserialize nameDB.json");
+            Names = (JsonConvert.DeserializeObject<Dictionary<String, List<SpeakerName>>>(json, Converter.Settings)
+                ?? throw new InvalidOperationException("Failed to deserialize nameDB.json"))["Names"];
         }
 
         public static SpeakerName? GetName(int id)
@@ -125,6 +125,93 @@ namespace DSCS_MBE_Tool
             };
         }
 
+
+
+    }
+
+    public static class Global
+    {
+        public static string Version { get; set; } = "1.1.0";
+        public static string RepoUrl { get; set; } = "";
+
+        private static bool verbose = false;
+        public static bool Verbose
+        {
+            get
+            {
+                if (!IsGlobalTaskCompleted)
+                {
+                    GlobalTask.Wait();
+                }
+                return verbose;
+            }
+            set
+            {
+                verbose = value;
+                if (verbose)
+                {
+                    System.Console.WriteLine($"Verbose mode is enabled. Version: {Version}");
+                }
+            }
+        }
+        private static bool multithreading = false;
+        public static bool Multithreading
+        {
+            get
+            {
+                if (!IsGlobalTaskCompleted)
+                {
+                    GlobalTask.Wait();
+                }
+                return multithreading;
+            }
+            set => multithreading = value;
+        }
+
+        private static bool disableProgressBar = false;
+        public static bool DisableProgressBar
+        {
+            get
+            {
+                if (!IsGlobalTaskCompleted)
+                {
+                    GlobalTask.Wait();
+                }
+                return disableProgressBar;
+            }
+            set => disableProgressBar = value;
+        }
+
+        private static Task GlobalTask { get; set; } = Task.CompletedTask;
+
+        public static void SetGlobalTask(Task task)
+        {
+            GlobalTask = task;
+        }
+
+        private static bool IsGlobalTaskCompleted => GlobalTask.IsCompleted;
+
+    }
+
+    public static class ConsoleExtensions
+    {
+        public static void WriteLineColored(this string message, ConsoleColor color)
+        {
+            var originalColor = System.Console.ForegroundColor;
+            System.Console.ForegroundColor = color;
+            System.Console.WriteLine(message);
+            System.Console.ForegroundColor = originalColor;
+        }
+        public static void WriteVerbose(this string message)
+        {
+            if(Global.Verbose) System.Console.WriteLine(message);
+        }
+
+        public static void WriteVerbose(this string message, ConsoleColor color)
+        {
+            if (Global.Verbose) WriteLineColored(message, ConsoleColor.DarkGray);
+        }
     }
 
 }
+
