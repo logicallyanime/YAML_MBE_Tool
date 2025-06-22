@@ -6,20 +6,31 @@ using System.Collections.Generic;
 using System.Formats.Asn1;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using static DSCS_MBE_Tool.NameDB;
 
 namespace DSCS_MBE_Tool
 {
+
+
 
     public static class NameDB
     {
         public static List<SpeakerName> Names { get; set; } = new List<SpeakerName>();
         static NameDB()
         {
-            string json = File.ReadAllText("nameDB.json");
-            Names = (JsonConvert.DeserializeObject<Dictionary<String, List<SpeakerName>>>(json, Converter.Settings)
-                ?? throw new InvalidOperationException("Failed to deserialize nameDB.json"))["Names"];
+            var thisAssembly = Assembly.GetExecutingAssembly();
+            using (var stream = thisAssembly.GetManifestResourceStream("DSCS_MBE_Tool.nameDB.json"))
+            {
+                using (var reader = new StreamReader(stream))
+                {
+                    string json = reader.ReadToEnd();
+                    Names = (JsonConvert.DeserializeObject<Dictionary<String, List<SpeakerName>>>(json, Converter.Settings)
+                        ?? throw new InvalidOperationException("Failed to deserialize nameDB.json"))["Names"];
+                }
+            }
         }
 
         public static SpeakerName? GetName(int id)
@@ -64,11 +75,19 @@ namespace DSCS_MBE_Tool
     
         static VoiceDb()
         {
-            string json = File.ReadAllText("voiceDB.json");
-            VoiceDbInstance dbInstance = JsonConvert.DeserializeObject<VoiceDbInstance>(json, Converter.Settings)
-                   ?? throw new InvalidOperationException("Failed to deserialize voiceDB.json");
-            Lexicon = dbInstance.Lexicon ?? throw new InvalidOperationException("Lexicon is null in voiceDB.json");
-            Scenes = dbInstance.Scenes ?? throw new InvalidOperationException("Scenes is null in voiceDB.json");
+            var thisAssembly = Assembly.GetExecutingAssembly();
+            using (var stream = thisAssembly.GetManifestResourceStream("DSCS_MBE_Tool.voiceDB.json"))
+            {
+                using (var reader = new StreamReader(stream))
+                {
+                    string json = reader.ReadToEnd();
+                    VoiceDbInstance dbInstance = JsonConvert.DeserializeObject<VoiceDbInstance>(json, Converter.Settings)
+                           ?? throw new InvalidOperationException("Failed to deserialize voiceDB.json");
+                    Lexicon = dbInstance.Lexicon ?? throw new InvalidOperationException("Lexicon is null in voiceDB.json");
+                    Scenes = dbInstance.Scenes ?? throw new InvalidOperationException("Scenes is null in voiceDB.json");
+                    
+                }
+            }
         }
         public static string? GetVoiceFile(string id)
         {
@@ -124,9 +143,6 @@ namespace DSCS_MBE_Tool
                 _ => T.Name.ToLower(),
             };
         }
-
-
-
     }
 
     public static class Global

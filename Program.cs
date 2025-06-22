@@ -1,10 +1,11 @@
-using System;
-using System.Diagnostics;
-using System.IO;
+using CommandLine;
 using DSCS_MBE_Tool;
 using DSCS_MBE_Tool.Strucs;
 using DSCSTools.MBE;
-using CommandLine;
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -45,7 +46,7 @@ namespace DSCSTools
 
         static int Main(string[] args)
         {
-            Global.SetGlobalTask( Parser.Default.ParseArguments<GlobalOptions>(args)
+            Global.SetGlobalTask(Parser.Default.ParseArguments<GlobalOptions>(args)
                 .WithParsedAsync(async options =>
                 {
                     Global.Verbose = options.Verbose;
@@ -57,10 +58,10 @@ namespace DSCSTools
                         Console.WriteLine($"Verbose mode is enabled. Version: {Global.Version}");
                     }
 
-                    // Return a completed task to satisfy the lambda's return type
+                    // Return a completed task to satisfy the lambda's return type  
                     await Task.CompletedTask;
                 })
-            ); // Ensure the async operation completes
+            ); // Ensure the async operation completes  
 
             var timer = Stopwatch.StartNew();
             int retcode = Parser.Default.ParseArguments<ExtractOptions, PackOptions>(args)
@@ -70,7 +71,7 @@ namespace DSCSTools
                     errs => 1);
             timer.Stop();
             TimeSpan timeTaken = timer.Elapsed;
-            Console.WriteLine($"Execution time: {timeTaken.TotalNanoseconds/1000000.0} |{timeTaken.TotalNanoseconds}ns");
+            Console.WriteLine($"Execution time: {timeTaken.TotalNanoseconds / 1000000.0} |{timeTaken.TotalNanoseconds}ns");
             return retcode;
         }
         static int ExtractMBE(ExtractOptions options)
