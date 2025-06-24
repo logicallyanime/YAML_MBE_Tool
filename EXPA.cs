@@ -200,8 +200,7 @@ namespace DSCSTools.MBE
                 extractedTable = tempTable;
 
             }
-
-            var yaml = serializer.Serialize(extractedTable);
+            var yaml = serializer.Serialize(extractedTable.Entries.First().Value);
             using var output = new StreamWriter(outputPath);
             output.Write(yaml);
         }
@@ -415,12 +414,12 @@ namespace DSCSTools.MBE
 
             Type structureType = GetStructureType(sourcePath);
 
-            if(structureType is Message)
+            if(structureType.Name is "Message")
             {
                 if (isPatch)
                 {
                     // Deserialize the YAML content into a list of PatchMessage objects
-                    List<PatchMessage> mbePatch = deserializer.Deserialize<List<PatchMessage>>(yamlContent);
+                    List <PatchMessage> mbePatch = deserializer.Deserialize<List<PatchMessage>>(yamlContent);
 
                     var entryList = mbeTable.AddEmptyEntry("Sheet1");
 
