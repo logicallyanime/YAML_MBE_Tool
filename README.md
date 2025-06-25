@@ -31,11 +31,8 @@ Before getting started with YAML_MBE_Tool, ensure your runtime environment meets
 - **Package Manager:** Nuget
 
 
-###  Installation
+###  Building from Source
 
-Install YAML_MBE_Tool using one of the following methods:
-
-**Build from source:**
 
 1. Clone the YAML_MBE_Tool repository:
 ```sh
@@ -63,7 +60,7 @@ Build YAML_MBE_Tool using the following command:
 ❯ dotnet build
 ```
 
-**Download from Release**
+### Download from Release
 
 You can always find the latest release and download binaries on the [Releases page](https://github.com/logicallyanime/YAML_MBE_Tool/releases/latest).
 
