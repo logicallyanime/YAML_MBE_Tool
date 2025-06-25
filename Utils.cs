@@ -190,7 +190,21 @@ namespace DSCS_MBE_Tool
             set => disableProgressBar = value;
         }
 
-        private static Task GlobalTask { get; set; } = Task.CompletedTask;
+        private static bool isPatch = true;
+        public static bool IsPatch
+        {
+            get
+            {
+                if (!IsGlobalTaskCompleted)
+                {
+                    GlobalTask.Wait();
+                }
+                return isPatch;
+            }
+            set => isPatch = value;
+        }
+
+        public static Task GlobalTask { get; set; } = Task.CompletedTask;
 
         public static void SetGlobalTask(Task task)
         {

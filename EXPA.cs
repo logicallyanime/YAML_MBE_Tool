@@ -173,34 +173,42 @@ namespace DSCSTools.MBE
 
             // Process MBE file and get extracted data
             MBETable extractedTable = ProcessMBE(sourcePath) ?? throw new Exception($"Error: No data extracted from {sourcePath}");
-            IMBEClass? firstEntry = extractedTable.Entries.FirstOrDefault().Value.FirstOrDefault();
-            if (firstEntry is Message or Text)
+            string? yaml;
+            if (Global.IsPatch)
             {
-                MBETable tempTable = new MBETable();
-                foreach (var table in extractedTable.Entries)
+                IMBEClass? firstEntry = extractedTable.Entries.FirstOrDefault().Value.FirstOrDefault();
+                if (firstEntry is Message or Text)
                 {
-                    var messages = tempTable.AddEmptyEntry(table.Key);
-                    foreach (var entry in table.Value)
+                    MBETable tempTable = new MBETable();
+                    foreach (var table in extractedTable.Entries)
                     {
-                        if (entry is Message message)
+                        var messages = tempTable.AddEmptyEntry(table.Key);
+                        foreach (var entry in table.Value)
                         {
-                            messages.Add(message.ToPatch(Path.GetFileName(sourcePath)));
-                        }
-                        else if (entry is Text text)
-                        {
-                            messages.Add(text.ToPatch(Path.GetFileName(sourcePath)));
-                        }
-                        else
-                        {
-                            throw new Exception($"Error: Entry in table {table.Key} is not of type Message.");
+                            if (entry is Message message)
+                            {
+                                messages.Add(message.ToPatch(Path.GetFileName(sourcePath)));
+                            }
+                            else if (entry is Text text)
+                            {
+                                messages.Add(text.ToPatch(Path.GetFileName(sourcePath)));
+                            }
+                            else
+                            {
+                                throw new Exception($"Error: Entry in table {table.Key} is not of type Message.");
+                            }
                         }
                     }
-                }
 
-                extractedTable = tempTable;
+                    extractedTable = tempTable;
 
+                }   
+                yaml = serializer.Serialize(extractedTable.Entries.First().Value);
             }
-            var yaml = serializer.Serialize(extractedTable.Entries.First().Value);
+            else
+            {
+                yaml = serializer.Serialize(extractedTable.Entries);
+            }
             using var output = new StreamWriter(outputPath);
             output.Write(yaml);
         }
@@ -416,14 +424,18 @@ namespace DSCSTools.MBE
 
             if(structureType.Name is "Message")
             {
-                if (isPatch)
+                if (Global.IsPatch)
                 {
+                    if(yamlContent.Contains("entries:\r\n " ) || yamlContent.Contains("Sheet1:\r\n "))
+                    {
+                        yamlContent = yamlContent.Replace("entries:\r\n ", "").Replace("Sheet1:\r\n ", "");
+                    }
                     // Deserialize the YAML content into a list of PatchMessage objects
                     List <PatchMessage> mbePatch = deserializer.Deserialize<List<PatchMessage>>(yamlContent);
 
                     var entryList = mbeTable.AddEmptyEntry("Sheet1");
 
-                    foreach(var entry in mbePatch)
+                    foreach(PatchMessage entry in mbePatch)
                     {
                         entryList.Add(entry.ToMessage());
                     }
@@ -446,7 +458,7 @@ namespace DSCSTools.MBE
             }
             else if (structureType is Text)
             {
-                if(isPatch)
+                if(Global.IsPatch)
                 {
                     List<PatchText> mbePatch = deserializer.Deserialize<List<PatchText>>(yamlContent);
                     var entryList = mbeTable.AddEmptyEntry("Sheet1");

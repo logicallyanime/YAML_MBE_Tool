@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,11 +17,14 @@ namespace DSCSTools
         [Option('v', "verbose", Default = false, HelpText = "Prints all messages to standard output.")]
         public bool Verbose { get; set; }
 
-        [Option('m', "smt", Default = false, HelpText = "Enables MultiThreading.")]
+        [Option('t', "Multithread", Default = false, HelpText = "Enables MultiThreading.")]
         public bool Multithreading { get; set; }
 
         [Option(Default = false, HelpText = "Disables the progress bar.")]
         public bool DisableProgressBar { get; set; }
+
+        [Option('m', "isPatch", Default = "true", HelpText = "Determines whether or not the MBE is extracted/packed as a patch. Valid Options: <true|false>")]
+        public string isPatch {  get; set; }
     }
     class Program
     {
@@ -51,6 +55,7 @@ namespace DSCSTools
                 {
                     Global.Verbose = options.Verbose;
                     Global.Multithreading = options.Multithreading;
+                    Global.IsPatch = bool.Parse(options.isPatch);
                     Global.DisableProgressBar = options.DisableProgressBar;
 
                     if (Global.Verbose)
@@ -63,6 +68,11 @@ namespace DSCSTools
                 })
             ); // Ensure the async operation completes  
 
+            if (Global.GlobalTask.IsFaulted)
+            {
+
+                throw Global.GlobalTask.Exception;
+            }
             var timer = Stopwatch.StartNew();
             int retcode = Parser.Default.ParseArguments<ExtractOptions, PackOptions>(args)
                 .MapResult(
@@ -74,6 +84,8 @@ namespace DSCSTools
             Console.WriteLine($"Execution time: {timeTaken.TotalNanoseconds / 1000000.0} |{timeTaken.TotalNanoseconds}ns");
             return retcode;
         }
+
+
         static int ExtractMBE(ExtractOptions options)
         {
             if (string.IsNullOrEmpty(options.TargetFolder))
@@ -87,6 +99,8 @@ namespace DSCSTools
             
             return 0;
         }
+
+
         static int PackMBE(PackOptions options)
         {
             if (string.IsNullOrEmpty(options.TargetFolder))

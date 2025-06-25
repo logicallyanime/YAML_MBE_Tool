@@ -1,8 +1,24 @@
 {
   "profiles": {
-    "DSCS_MBE_Tool": {
+    "Extract": {
       "commandName": "Project",
-      "commandLineArgs": "mbeextract \"C:\\Users\\Tyler\\Desktop\\DSCS_Rom\\resources\\DSDB\\DSDB\\mbe\\text\" --smt"
+      "commandLineArgs": "mbeextract \"C:\\Users\\Tyler\\Desktop\\DSCS_Rom\\resources\\DSDB\\DSDB\\mbe\\message\\Converted\\Converted\\m00_d02_0501.mbe\" --isPatch false"
+    },
+    "Pack": {
+      "commandName": "Project",
+      "commandLineArgs": "mbepack \"C:\\Users\\Tyler\\Desktop\\DSCS_Rom\\resources\\DSDB\\DSDB\\mbe\\message\\Converted\\m00_d02_0501.yaml\" --isPatch false"
+    },
+    "Pack Patch": {
+      "commandName": "Project",
+      "commandLineArgs": "mbepack \"C:\\Users\\Tyler\\Desktop\\DSCS_Rom\\resources\\DSDB\\DSDB\\mbe\\message_Converted\\t2001.yaml\""
+    },
+    "Extract Patch": {
+      "commandName": "Project",
+      "commandLineArgs": "mbeextract \"C:\\Users\\Tyler\\Desktop\\DSCS_Rom\\resources\\DSDB\\DSDB\\mbe\\message\\m00_d02_0501.mbe\""
+    },
+    "No args": {
+      "commandName": "Project",
+      "commandLineArgs": "help"
     }
   }
 }
