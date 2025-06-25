@@ -63,30 +63,53 @@ Build YAML_MBE_Tool using the following command:
 ❯ dotnet build
 ```
 
+**Download from Release**
+
+You can always find the latest release and download binaries on the [Releases page](https://github.com/logicallyanime/YAML_MBE_Tool/releases/latest).
+
 
 ###  Usage
 
 ```sh
+# Extract a .mbe file or directory to YAML
+DSCSTools mbeextract <source> [targetFolder] [--isPatch <true|false>] [--verbose] [--Multithread] [--DisableProgressBar]
 
-
-  mbeextract    Extract a .mbe file or a directory of them into YAML.
-
-  mbepack       Repack a YAML file or directory of YAML files into a .mbe file.
-
-  help          Display more information on a specific command.
-
-  version       Display version information.
-
-  -v, --verbose           (Default: false) Prints all messages to standard output.
-
-  -m, --smt               (Default: false) Enables MultiThreading.
-
-  --disableprogressbar    (Default: false) Disables the progress bar.
-
-  --help                  Display this help screen.
-
-  --version               Display version information.
+# Repack YAML files or directory into a .mbe file
+DSCSTools mbepack <source> [targetFile] [--isPatch <true|false>] [--verbose] [--Multithread] [--DisableProgressBar]
   ```
+
+  Options
+* --isPatch <true|false> or -m <true|false>
+>Determines whether the MBE is extracted/packed as a patch.
+
+>**Default**: true
+
+>Example: `--isPatch false`
+
+* --verbose or -v
+>Prints all messages to standard output.
+
+* --Multithread or -t
+>Enables multithreading.
+
+>**Default**: false
+
+* --DisableProgressBar
+>Disables the progress bar.
+
+```
+# Extract with patch mode (default)
+DSCSTools mbeextract input.mbe outputFolder
+
+# Extract without patch mode
+DSCSTools mbeextract input.mbe outputFolder --isPatch false
+
+# Pack with patch mode (default)
+DSCSTools mbepack inputFolder output.mbe
+
+# Pack without patch mode and with verbose output
+DSCSTools mbepack inputFolder output.mbe --isPatch false --verbose
+```
 
 ##  Contributing
 
