@@ -60,11 +60,6 @@ namespace DSCSTools
                     Global.IsPatch = bool.Parse(options.isPatch);
                     Global.DisableProgressBar = options.DisableProgressBar;
 
-                    if (Global.Verbose)
-                    {
-                        Console.WriteLine($"Verbose mode is enabled. Version: {Global.Version}");
-                    }
-
                     // Return a completed task to satisfy the lambda's return type  
                     await Task.CompletedTask;
                 })
