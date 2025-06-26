@@ -27,8 +27,12 @@ Currently YMT does not support extracting `data` mbes. This is due to the fact t
 
 Before getting started with YAML_MBE_Tool, ensure your runtime environment meets the following requirements:
 
+For Building:
 - **Language:** C# .Net 8.0
 - **Package Manager:** Nuget
+
+For Using:
+- **Framework** [.Net 8.0 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
 
 
 ###  Building from Source
