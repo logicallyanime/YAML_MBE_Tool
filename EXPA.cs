@@ -133,9 +133,9 @@ namespace DSCSTools.MBE
                     Parallel.ForEach(files, file =>
                     {
                         // Use a local variable to avoid race conditions
+                        $"[FILE] Processing file: {file}".WriteVerbose(ConsoleColor.Magenta);
                         MBETable localTable = EXPA.ParseYAML(file);
                         EXPA.PackMBETable(localTable, file, targetPath);
-                        $"[FILE] Processed file: {file}".WriteVerbose(ConsoleColor.Magenta);
                         int count = Interlocked.Increment(ref processedCount);
                         progressBar.Report(count);
                     });
@@ -144,8 +144,8 @@ namespace DSCSTools.MBE
                 {
                     foreach (var file in files)
                     {
+                        $"[FILE] Processing file: {file}".WriteVerbose(ConsoleColor.Magenta);
                         SaveYamlObj(file, targetPath);
-                        $"[FILE] Processed file: {file}".WriteVerbose(ConsoleColor.Magenta);
                         processedCount++;
                         progressBar.Report(processedCount);
                     }
@@ -161,6 +161,8 @@ namespace DSCSTools.MBE
                 $"[ERROR] The source path is neither a directory nor a file: {sourcePath}".WriteVerbose(ConsoleColor.Red);
                 throw new ArgumentException("Error: input is neither directory nor file.");
             }
+            $"[INFO] Extracting completed successfully. Output written to {targetPath}".WriteLineColored(ConsoleColor.Green);
+            Console.WriteLine("Done");
         }
         public static void SaveYamlObj(string sourcePath, string targetPath)
         {
@@ -426,9 +428,10 @@ namespace DSCSTools.MBE
             {
                 if (Global.IsPatch)
                 {
-                    if(yamlContent.Contains("entries:\r\n " ) || yamlContent.Contains("Sheet1:\r\n "))
+                    "IsPatch".WriteVerbose();
+                    if (yamlContent.Contains("entries:\r\n" ) || yamlContent.Contains("Sheet1:\r\n"))
                     {
-                        yamlContent = yamlContent.Replace("entries:\r\n ", "").Replace("Sheet1:\r\n ", "");
+                        yamlContent = Regex.Replace(yamlContent, @"^entries:\r\n *Sheet1:\r\n", "");
                     }
                     // Deserialize the YAML content into a list of PatchMessage objects
                     List <PatchMessage> mbePatch = deserializer.Deserialize<List<PatchMessage>>(yamlContent);
@@ -442,6 +445,7 @@ namespace DSCSTools.MBE
                 }
                 else
                 {
+                    "IsNotPatch".WriteVerbose();
                     // Deserialize the YAML content into a list of Message objects
                     Dictionary<string, List<Message>> mbePatch = deserializer.Deserialize<Dictionary<string, List<Message>>>(yamlContent);
                     foreach (var table in mbePatch)

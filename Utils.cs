@@ -5,9 +5,6 @@ using System.Reflection;
 
 namespace DSCS_MBE_Tool
 {
-
-
-
     public static class NameDB
     {
         public static List<SpeakerName> Names { get; set; } = new List<SpeakerName>();
@@ -64,7 +61,7 @@ namespace DSCS_MBE_Tool
 
         public static Dictionary<string, Dictionary<string, string>>? Scenes { get; set; }
 
-    
+
         static VoiceDb()
         {
             var thisAssembly = Assembly.GetExecutingAssembly();
@@ -162,7 +159,7 @@ namespace DSCS_MBE_Tool
                 }
             }
         }
-        private static bool multithreading = false;
+        private static bool multithreading = true;
         public static bool Multithreading
         {
             get
