@@ -51,6 +51,19 @@ namespace DSCSTools.MBE
         {
             return (uint)((value - (offset % value)) % value);
         }
+        private static uint GetEntrySize(string type, uint currentSize)
+        {
+            switch (type)
+            {
+                case "byte": return 1;
+                case "short": return 2 + Align(currentSize, 2);
+                case "int": return 4 + Align(currentSize, 4);
+                case "float": return 4 + Align(currentSize, 4);
+                case "string": return 8 + Align(currentSize, 8);
+                case "int array": return 16 + Align(currentSize, 8);
+                default: throw new ArgumentException($"Error: Type \"{type}\" not included in GetEntrySize cases");
+            }
+        }
 
         private static Type GetStructureType(string sourcePath)
         {
@@ -86,26 +99,9 @@ namespace DSCSTools.MBE
                     }
                 }
             }
-
-
-
             throw new Exception($"Error: No fitting structure file found for {sourcePath}");
-
         }
 
-        private static uint GetEntrySize(string type, uint currentSize)
-        {
-            switch (type)
-            {
-                case "byte": return 1;
-                case "short": return 2 + Align(currentSize, 2);
-                case "int": return 4 + Align(currentSize, 4);
-                case "float": return 4 + Align(currentSize, 4);
-                case "string": return 8 + Align(currentSize, 8);
-                case "int array": return 16 + Align(currentSize, 8);
-                default: throw new ArgumentException($"Error: Type \"{type}\" not included in GetEntrySize cases");
-            }
-        }
 
         public static void ExtractMBE(string sourcePath, string targetPath)
         {
@@ -460,10 +456,14 @@ namespace DSCSTools.MBE
                 }
 
             }
-            else if (structureType is Text)
+            else if (structureType.Name is "Text")
             {
                 if(Global.IsPatch)
                 {
+                    if (yamlContent.Contains("entries:\r\n" ) || yamlContent.Contains("Sheet1:\r\n"))
+                    {
+                        yamlContent = Regex.Replace(yamlContent, @"^entries:\r\n *Sheet1:\r\n", "");
+                    }
                     List<PatchText> mbePatch = deserializer.Deserialize<List<PatchText>>(yamlContent);
                     var entryList = mbeTable.AddEmptyEntry("Sheet1");
                     foreach (var entry in mbePatch)

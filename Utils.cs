@@ -136,7 +136,14 @@ namespace DSCS_MBE_Tool
 
     public static class Global
     {
-        public static string Version { get; set; } = "1.1.0";
+        public static string GetVersion()
+        {
+            var version = Assembly.GetEntryAssembly()?
+                .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+                .InformationalVersion;
+            return version ?? "Null"
+                        .Split("+").First() ;
+        }
         public static string RepoUrl { get; set; } = "";
 
         private static bool verbose = false;
@@ -155,7 +162,7 @@ namespace DSCS_MBE_Tool
                 verbose = value;
                 if (verbose)
                 {
-                    System.Console.WriteLine($"Verbose mode is enabled. Version: {Version}");
+                    System.Console.WriteLine($"Verbose mode is enabled. Version: {GetVersion()}");
                 }
             }
         }
