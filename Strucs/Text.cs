@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -22,13 +23,83 @@ namespace DSCS_MBE_Tool.Strucs
             PatchText patchText = new PatchText
             {
                 id = ID.ToString(),
-                msg = new Dictionary<string, string>
-                {
-                    { "jp", Japanese ?? "" },
-                    { "eng", English ?? "" }
-                }
+                msg = GetLangHash()
             };
             return patchText;
+        }
+
+        public Dictionary<string, string> GetLangHash()
+        {
+
+            if(Global.ExportLanguages != null && Global.ExportLanguages.Count != 0)
+            {
+
+                if (Global.ExportLanguages.Contains("all", StringComparer.OrdinalIgnoreCase))
+                {
+                    return new Dictionary<string, string>
+                    {
+                        {"jpn", Japanese ?? ""},
+                        {"eng", English ?? ""},
+                        {"zho", Chinese ?? ""},
+                        {"engc", EnglishCensored ?? ""},
+                        {"kor", Korean ?? ""},
+                        {"ger", German ?? ""}
+                    };
+                }
+                    return new Dictionary<string, string>
+                    {
+                        {"jp", Japanese ?? ""},
+                        {"ja", Japanese ?? ""},
+                        {"jpn", Japanese ?? ""},
+                        {"us", English ?? ""},
+                        {"usa", English ?? ""},
+                        {"en", English ?? ""},
+                        {"eng", English ?? ""},
+                        {"cn", Chinese ?? ""},
+                        {"chn", Chinese ?? ""},
+                        {"zh", Chinese ?? ""},
+                        {"zho", Chinese ?? ""},
+                        {"cdo", Chinese ?? ""},
+                        {"cjy", Chinese ?? ""},
+                        {"cmn", Chinese ?? ""},
+                        {"cnp", Chinese ?? ""},
+                        {"csp", Chinese ?? ""},
+                        {"czh", Chinese ?? ""},
+                        {"czo", Chinese ?? ""},
+                        {"gan", Chinese ?? ""},
+                        {"hak", Chinese ?? ""},
+                        {"hnm", Chinese ?? ""},
+                        {"hsn", Chinese ?? ""},
+                        {"luh", Chinese ?? ""},
+                        {"lzh", Chinese ?? ""},
+                        {"mnp", Chinese ?? ""},
+                        {"nan", Chinese ?? ""},
+                        {"sjc", Chinese ?? ""},
+                        {"wuu", Chinese ?? ""},
+                        {"yue", Chinese ?? ""},
+                        {"dng", Chinese ?? ""},
+                        {"engc", EnglishCensored ?? ""},
+                        {"eng_censored", EnglishCensored ?? ""},
+                        {"kr", Korean ?? ""},
+                        {"ko", Korean ?? ""},
+                        {"kor", Korean ?? ""},
+                        {"ger", German ?? ""},
+                        {"de", German ?? ""},
+                        {"deu", German ?? ""}
+                    }
+                    .Where(kvp => Global.ExportLanguages.Contains(kvp.Key, StringComparer.OrdinalIgnoreCase))
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            }
+            else
+            {
+                return new Dictionary<string, string>
+                {
+                    {"jpn", Japanese ?? ""},
+                    {"eng", English ?? ""}
+                };
+            }
+
+            throw new UnauthorizedAccessException();
         }
 
     }
@@ -37,17 +108,49 @@ namespace DSCS_MBE_Tool.Strucs
     {
         public required string id { get; set; }
         public required Dictionary<string, string> msg { get; set; }
+
+
         public Text ToText()
         {
+            string jpn = "";
+            string eng = "";
+            string zho = "";
+            string engc = "";
+            string kor = "";
+            string ger = "";
+
+            foreach (var kvp in msg)
+            {
+                var jpKeys = new HashSet<string> { "ja", "jp", "jpn" };
+                var enKeys = new HashSet<string> { "us", "usa", "en", "eng" };
+                var zhKeys = new HashSet<string> { "cn", "chn", "zh", "zho", "cdo", "cjy", "cmn", "cnp", "csp", "czh", "czo", "gan", "hak", "hnm", "hsn", "luh", "lzh", "mnp", "nan", "sjc", "wuu", "yue", "dng" };
+                var engcKeys = new HashSet<string> { "engc", "eng_censored" };
+                var koKeys = new HashSet<string> { "kor", "ko", "kp" };
+                var deKeys = new HashSet<string> { "ger", "de", "deu" };
+
+                var key = kvp.Key.ToLowerInvariant();
+                if (jpKeys.Contains(key))
+                    jpn = kvp.Value;
+                else if (enKeys.Contains(key))
+                    eng = kvp.Value;
+                else if (zhKeys.Contains(key))
+                    zho = kvp.Value;
+                else if (engcKeys.Contains(key))
+                    engc = kvp.Value;
+                else if (koKeys.Contains(key))
+                    kor = kvp.Value;
+                else if (deKeys.Contains(key))
+                    ger = kvp.Value;
+            }
             Text text = new Text
             {
                 ID = int.Parse(id),
-                Japanese = msg.ContainsKey("jp") ? msg["jp"] : "",
-                English = msg.ContainsKey("eng") ? msg["eng"] : "",
-                Chinese = msg.ContainsKey("chi") ? msg["chi"] : "",
-                EnglishCensored = msg.ContainsKey("eng_censored") ? msg["eng_censored"] : "",
-                Korean = msg.ContainsKey("kor") ? msg["kor"] : "",
-                German = msg.ContainsKey("ger") ? msg["ger"] : ""
+                Japanese = jpn,
+                English = eng,
+                Chinese = zho,
+                EnglishCensored = engc,
+                Korean = kor,
+                German = ger
             };
             return text;
         }
@@ -95,13 +198,83 @@ namespace DSCS_MBE_Tool.Strucs
                 speakerId = Speaker,
                 voiceFn = voiceFile,
                 name = name,
-                msg = new Dictionary<string, string>
-                {
-                    { "jp", Japanese ?? "" },
-                    { "eng", English ?? "" }
-                }
+                msg = GetLangHash()
             };
             return patchMessage;
+        }
+
+        public Dictionary<string, string> GetLangHash()
+        {
+
+            if(Global.ExportLanguages != null && Global.ExportLanguages.Count != 0)
+            {
+
+                if (Global.ExportLanguages.Contains("all", StringComparer.OrdinalIgnoreCase))
+                {
+                    return new Dictionary<string, string>
+                    {
+                        {"jpn", Japanese ?? ""},
+                        {"eng", English ?? ""},
+                        {"zho", Chinese ?? ""},
+                        {"engc", EnglishCensored ?? ""},
+                        {"kor", Korean ?? ""},
+                        {"ger", German ?? ""}
+                    };
+                }
+                    return new Dictionary<string, string>
+                    {
+                        {"jp", Japanese ?? ""},
+                        {"ja", Japanese ?? ""},
+                        {"jpn", Japanese ?? ""},
+                        {"us", English ?? ""},
+                        {"usa", English ?? ""},
+                        {"en", English ?? ""},
+                        {"eng", English ?? ""},
+                        {"cn", Chinese ?? ""},
+                        {"chn", Chinese ?? ""},
+                        {"zh", Chinese ?? ""},
+                        {"zho", Chinese ?? ""},
+                        {"cdo", Chinese ?? ""},
+                        {"cjy", Chinese ?? ""},
+                        {"cmn", Chinese ?? ""},
+                        {"cnp", Chinese ?? ""},
+                        {"csp", Chinese ?? ""},
+                        {"czh", Chinese ?? ""},
+                        {"czo", Chinese ?? ""},
+                        {"gan", Chinese ?? ""},
+                        {"hak", Chinese ?? ""},
+                        {"hnm", Chinese ?? ""},
+                        {"hsn", Chinese ?? ""},
+                        {"luh", Chinese ?? ""},
+                        {"lzh", Chinese ?? ""},
+                        {"mnp", Chinese ?? ""},
+                        {"nan", Chinese ?? ""},
+                        {"sjc", Chinese ?? ""},
+                        {"wuu", Chinese ?? ""},
+                        {"yue", Chinese ?? ""},
+                        {"dng", Chinese ?? ""},
+                        {"engc", EnglishCensored ?? ""},
+                        {"eng_censored", EnglishCensored ?? ""},
+                        {"kr", Korean ?? ""},
+                        {"ko", Korean ?? ""},
+                        {"kor", Korean ?? ""},
+                        {"ger", German ?? ""},
+                        {"de", German ?? ""},
+                        {"deu", German ?? ""}
+                    }
+                    .Where(kvp => Global.ExportLanguages.Contains(kvp.Key, StringComparer.OrdinalIgnoreCase))
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            }
+            else
+            {
+                return new Dictionary<string, string>
+                {
+                    {"jpn", Japanese ?? ""},
+                    {"eng", English ?? ""}
+                };
+            }
+
+            throw new UnauthorizedAccessException();
         }
     }
     public class PatchMessage: IMBEClass
@@ -123,11 +296,47 @@ namespace DSCS_MBE_Tool.Strucs
 
         public Message ToMessage()
         {
+            string jpn = "";
+            string eng = "";
+            string zho = "";
+            string engc = "";
+            string kor = "";
+            string ger = "";
+
+            foreach (var kvp in msg)
+            {
+                var jpKeys = new HashSet<string> { "ja", "jp", "jpn" };
+                var enKeys = new HashSet<string> { "us", "usa", "en", "eng" };
+                var zhKeys = new HashSet<string> { "cn", "chn", "zh", "zho", "cdo", "cjy", "cmn", "cnp", "csp", "czh", "czo", "gan", "hak", "hnm", "hsn", "luh", "lzh", "mnp", "nan", "sjc", "wuu", "yue", "dng" };
+                var engcKeys = new HashSet<string> { "engc", "eng_censored" };
+                var koKeys = new HashSet<string> { "kor", "ko", "kp" };
+                var deKeys = new HashSet<string> { "ger", "de", "deu" };
+
+                var key = kvp.Key.ToLowerInvariant();
+                if (jpKeys.Contains(key))
+                    jpn = kvp.Value;
+                else if (enKeys.Contains(key))
+                    eng = kvp.Value;
+                else if (zhKeys.Contains(key))
+                    zho = kvp.Value;
+                else if (engcKeys.Contains(key))
+                    engc = kvp.Value;
+                else if (koKeys.Contains(key))
+                    kor = kvp.Value;
+                else if (deKeys.Contains(key))
+                    ger = kvp.Value;
+            }
+
             Message message = new Message
             {
                 ID = int.Parse(id),
                 Speaker = speakerId,
-                English = msg.ContainsKey("eng") ? msg["eng"] : ""
+                Japanese = jpn,
+                English = eng,
+                Chinese = zho,
+                EnglishCensored = engc,
+                Korean = kor,
+                German = ger
             };
             return message;
         }

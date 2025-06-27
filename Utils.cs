@@ -11,7 +11,7 @@ namespace DSCS_MBE_Tool
         static NameDB()
         {
             var thisAssembly = Assembly.GetExecutingAssembly();
-            using (var stream = thisAssembly.GetManifestResourceStream("DSCS_MBE_Tool.nameDB.json"))
+            using (var stream = thisAssembly.GetManifestResourceStream("DSCS_MBE_Tool.nameDB.json") ?? throw new ArgumentNullException())
             {
                 using (var reader = new StreamReader(stream))
                 {
@@ -216,6 +216,8 @@ namespace DSCS_MBE_Tool
         }
 
         private static bool IsGlobalTaskCompleted => GlobalTask.IsCompleted;
+
+        public static List<string>? ExportLanguages { get; set; } = null;
 
     }
 
