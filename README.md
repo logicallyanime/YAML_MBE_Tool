@@ -20,6 +20,8 @@ YAML-MBE Tool (YMT) is a command-line tool based off [SydMontague's DSCS_Tools](
 
 ## Limitations
 
+This project is only known to be working with the MBEs found in Digimon Story: Cybersleuth Complete Edition. Use for other MBEs (such as Digimon Story: Time Stranger) has been untested and may not work.
+
 Currently YMT does not support extracting `data` mbes. This is due to the fact this tool uses Classes to represent the data in the MBE files rather than structure jsons, and the data mbes are not structured in a way that can be easily represented by classes. This may change in the future, but for now, you will need to use DSCS_Tools to extract data mbes.
 ##  Getting Started
 
