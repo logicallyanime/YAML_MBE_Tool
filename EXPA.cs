@@ -15,7 +15,7 @@ using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 using static DSCS_MBE_Tool.NameDB;
 
-namespace DSCSTools.MBE
+namespace DSCSTools
 {
     public class EXPA
     {
@@ -100,65 +100,6 @@ namespace DSCSTools.MBE
                 }
             }
             throw new Exception($"Error: No fitting structure file found for {sourcePath}");
-        }
-
-
-        public static void ExtractMBE(string sourcePath, string targetPath)
-        {
-            // Use WriteVerbose extension with color instead of direct Console calls.
-            $"[INFO] Input Path: {sourcePath}".WriteVerbose(ConsoleColor.Yellow);
-
-            if (!Directory.Exists(sourcePath) && !File.Exists(sourcePath))
-                throw new ArgumentException($"Error: input path \"{sourcePath}\" does not exist.");
-
-            $"[STEP 1] Validating input path... {sourcePath}".WriteVerbose(ConsoleColor.Green);
-
-            if (Path.GetFullPath(sourcePath) == Path.GetFullPath(targetPath))
-                throw new ArgumentException("Error: input and output paths must be different!");
-
-            $"[STEP 2] Paths validated successfully.".WriteVerbose(ConsoleColor.Green);
-
-            if (Directory.Exists(sourcePath))
-            {
-                $"[DIRECTORY] Processing directory: {sourcePath}".WriteVerbose(ConsoleColor.Blue);
-                string[] files = Directory.GetFiles(sourcePath);
-                ConsoleProgress.ProgressBar progressBar = new(files.Length);
-                int processedCount = 0;
-                if (Global.Multithreading)
-                {
-                    Parallel.ForEach(files, file =>
-                    {
-                        // Use a local variable to avoid race conditions
-                        $"[FILE] Processing file: {file}".WriteVerbose(ConsoleColor.Magenta);
-                        MBETable localTable = EXPA.ParseYAML(file);
-                        EXPA.PackMBETable(localTable, file, targetPath);
-                        int count = Interlocked.Increment(ref processedCount);
-                        progressBar.Report(count);
-                    });
-                }
-                else
-                {
-                    foreach (var file in files)
-                    {
-                        $"[FILE] Processing file: {file}".WriteVerbose(ConsoleColor.Magenta);
-                        SaveYamlObj(file, targetPath);
-                        processedCount++;
-                        progressBar.Report(processedCount);
-                    }
-                }
-            }
-            else if (File.Exists(sourcePath))
-            {
-                $"[FILE] Processing single file: {sourcePath}".WriteVerbose(ConsoleColor.Blue);
-                SaveYamlObj(sourcePath, targetPath);
-            }
-            else
-            {
-                $"[ERROR] The source path is neither a directory nor a file: {sourcePath}".WriteVerbose(ConsoleColor.Red);
-                throw new ArgumentException("Error: input is neither directory nor file.");
-            }
-            $"[INFO] Extracting completed successfully. Output written to {targetPath}".WriteLineColored(ConsoleColor.Green);
-            Console.WriteLine("Done");
         }
         public static void SaveYamlObj(string sourcePath, string targetPath)
         {
@@ -419,6 +360,10 @@ namespace DSCSTools.MBE
             MBETable mbeTable = new MBETable();
 
             Type structureType = GetStructureType(sourcePath);
+            
+            string tableName = "Sheet1";
+
+
 
             if(structureType.Name is "Message")
             {
@@ -458,14 +403,18 @@ namespace DSCSTools.MBE
             }
             else if (structureType.Name is "Text")
             {
-                if(Global.IsPatch)
+                if (String.Equals(Path.GetFileNameWithoutExtension(sourcePath), "tournament_name", StringComparison.OrdinalIgnoreCase))
+                {
+                    tableName = "event";
+                }
+                if (Global.IsPatch)
                 {
                     if (yamlContent.Contains("entries:\r\n" ) || yamlContent.Contains("Sheet1:\r\n"))
                     {
-                        yamlContent = Regex.Replace(yamlContent, @"^entries:\r\n *Sheet1:\r\n", "");
+                        yamlContent = Regex.Replace(yamlContent, @"^entries:\r\n *(?:Sheet1|event):\r\n", "");
                     }
                     List<PatchText> mbePatch = deserializer.Deserialize<List<PatchText>>(yamlContent);
-                    var entryList = mbeTable.AddEmptyEntry("Sheet1");
+                    var entryList = mbeTable.AddEmptyEntry(tableName);
                     foreach (var entry in mbePatch)
                     {
                         entryList.Add(entry.ToText());
@@ -474,13 +423,11 @@ namespace DSCSTools.MBE
                 else
                 {
                     Dictionary<string, List<Text>> mbePatch = deserializer.Deserialize<Dictionary<string, List<Text>>>(yamlContent);
-                    foreach (var table in mbePatch)
+
+                    List<IMBEClass> entryList = mbeTable.AddEmptyEntry(tableName);
+                    foreach (Text entry in mbePatch[tableName])
                     {
-                        List<IMBEClass> entryList = mbeTable.AddEmptyEntry(table.Key);
-                        foreach (Text entry in table.Value)
-                        {
-                            entryList.Add(entry);
-                        }
+                        entryList.Add(entry);
                     }
                 }
             }

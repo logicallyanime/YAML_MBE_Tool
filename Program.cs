@@ -2,7 +2,7 @@ using CommandLine;
 using CommandLine.Text;
 using DSCS_MBE_Tool;
 using DSCS_MBE_Tool.Strucs;
-using DSCSTools.MBE;
+using DSCSTools;
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
