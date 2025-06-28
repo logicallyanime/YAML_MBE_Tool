@@ -24,13 +24,15 @@ namespace DSCSTools
         private const string MESSAGES_REGEX = @"(^[>m|s][0-9]{2,3}_.{3,4}_\d{4})|(battle_(\d{4}|colosseum))|[d|t]\d{3,5}(_add|_\d\d)?$|(keyword_[d|t]\d{3,5}_.*)|(broken_nabit|after_evt|(kyoko|mirei)_help(_add)?)|((hm_|emblem_)?quest($|_(?!text|para)(.{3,8}(vent)?)))|(.*(?<!battle_info|^common|help|info|yes_no)_message(_add)?$)|(field_te.*)";
         private const string TEXT_REGEX = @"(.*(battle_info|^common|help|info)_message(_add)?$)|(^col.*?_(event_battle_.*|free.*|item_.*|text))|(custom_.*_(bgm|scene)(?!_para))|(digi?(?(_)_farm|(farm|line|mon)(_food)?_(text(_add)?|book.*|type)))|(hackers?_(battle_m.*|r.*))|((hacking_|support_)?skill(_content|_target)?_(c.*n_exp|e.*|n.*))|((char|field|equip_|item_|k.*d_|map.*|medal_)name)|([bmqs](?!i|ul|el).*_text(?!_para)(_add)?)|.*(_e.*n$)|(^bgm$|elem.*|^[eg].*tion$|mai.*u|^personality$|scen.*ect|st.*ress)";
         private const string TEXT_PARA_REGEX = @"(tut.*title|yes.no.*|(eden|mi|mu).*_text$)";
-        private struct EXPAHeader
+        private const UInt32 EXPA_MAGIC = 0x41505845; // "EXPA"
+        private const UInt32 CHNK_MAGIC = 0x4B4E4843; // "CHNK"
+        public struct EXPAHeader
         {
             public uint MagicValue;
             public uint NumTables;
         }
 
-        private class EXPATable
+        public class EXPATable
         {
             public required byte[] TablePtr;
             public int Offset;
@@ -41,13 +43,13 @@ namespace DSCSTools
             public uint EntryCount() => BitConverter.ToUInt32(TablePtr, Offset + (int)NameSize() + 8);
         }
 
-        private struct CHNKHeader
+        public struct CHNKHeader
         {
             public uint MagicValue;
             public uint NumEntry;
         }
 
-        private static uint Align(long offset, long value)
+        protected static uint Align(long offset, long value)
         {
             return (uint)((value - (offset % value)) % value);
         }
@@ -65,7 +67,7 @@ namespace DSCSTools
             }
         }
 
-        private static Type GetStructureType(string sourcePath)
+        protected static Type GetStructureType(string sourcePath)
         {
             string filename = Path.GetFileNameWithoutExtension(sourcePath);
             RegexOptions options = RegexOptions.ExplicitCapture;
@@ -152,124 +154,124 @@ namespace DSCSTools
             output.Write(yaml);
         }
 
-        public static MBETable ProcessMBE(string sourcePath)
+        protected static EXPAHeader ReadExpaHeader(byte[] data)
         {
-            
-            using (var input = new BinaryReader(File.OpenRead(sourcePath)))
+            if (BitConverter.ToUInt32(data, 0) != EXPA_MAGIC) // "EXPA"
+                throw new InvalidDataException($"File is not in EXPA structureType.");
+
+            return new EXPAHeader
             {
-                var data = input.ReadBytes((int)input.BaseStream.Length);
+                MagicValue = BitConverter.ToUInt32(data, 0),
+                NumTables = BitConverter.ToUInt32(data, 4)
+            };
+        }
 
-                // Read EXPA Header
-                EXPAHeader header = new()
-                {
-                    MagicValue = BitConverter.ToUInt32(data, 0),
-                    NumTables = BitConverter.ToUInt32(data, 4)
-                };
+        protected static CHNKHeader ReadChnkHeader(byte[] data, uint offset)
+        {
+            if (BitConverter.ToUInt32(data, (int)offset) != CHNK_MAGIC) // "CHNK"
+                throw new InvalidDataException($"CHNK is missing or not where expected.");
 
-                if (header.MagicValue != 0x41505845) // "EXPA"
-                    throw new InvalidOperationException($"Error: source file {Path.GetFileName(sourcePath)} is not in EXPA format.");
+            return new CHNKHeader
+            {
+                MagicValue = BitConverter.ToUInt32(data, (int)offset),
+                NumEntry = BitConverter.ToUInt32(data, (int)offset + 4)
+            };
+        }
 
-                List<EXPATable> tables = [];
-                uint offset = 8;
+        protected static List<EXPATable> ReadExpaTables(byte[] data,ref uint offset, EXPAHeader header)
+        {
+            List<EXPATable> tables = [];
 
-                // Read table information
-                for (uint i = 0; i < header.NumTables; i++)
-                {
-                    var table = new EXPATable { TablePtr = data, Offset = (int)offset };
-                    tables.Add(table);
+            // Read table information
+            for (uint i = 0; i < header.NumTables; i++)
+            {
+                var table = new EXPATable { TablePtr = data, Offset = (int)offset };
+                tables.Add(table);
 
-                    offset += table.NameSize() + 0x0C;
+                offset += table.NameSize() + 0x0C;
 
-                    if (table.NameSize() % 8 == 0)
-                        offset += 4;
+                if (table.NameSize() % 8 == 0)
+                    offset += 4;
 
-                    offset += table.EntryCount() * (table.EntrySize() + Align(table.EntrySize(), 8));
-                }
+                offset += table.EntryCount() * (table.EntrySize() + Align(table.EntrySize(), 8));
+            }
+            return tables;
+        }
 
-                // Read CHNK Header
-                CHNKHeader chunkHeader = new()
-                {
-                    MagicValue = BitConverter.ToUInt32(data, (int)offset),
-                    NumEntry = BitConverter.ToUInt32(data, (int)offset + 4)
-                };
-                offset += 8;
+        private static void ProcessCHNKEntries(byte[] data,ref uint offset, CHNKHeader chunkHeader)
+        {
+            // Process CHNK entries
+            for (uint i = 0; i < chunkHeader.NumEntry; i++)
+            {
+                uint dataOffset = BitConverter.ToUInt32(data, (int)offset);
+                uint size = BitConverter.ToUInt32(data, (int)offset + 4);
+                ulong ptr = (ulong)offset;
 
-                // Process CHNK entries
-                for (uint i = 0; i < chunkHeader.NumEntry; i++)
-                {
-                    uint dataOffset = BitConverter.ToUInt32(data, (int)offset);
-                    uint size = BitConverter.ToUInt32(data, (int)offset + 4);
-                    ulong ptr = (ulong)offset;
-
-                    Buffer.BlockCopy(BitConverter.GetBytes(ptr), 0, data, (int)dataOffset, 8);
-                    offset += (size + 8);
-                }
-
-                // Get structure 
-                Type format = GetStructureType(sourcePath);
-                string filename = Path.GetFileName(sourcePath);
-                // Instead of: Dictionary<string, List<format>> extractedTable = [];
-                // Use Activator.CreateInstance and IList for dynamic type creation
-
-                var extractedTable = new MBETable();
-
-
-                // Process each table
-                foreach (EXPATable table in tables)
-                {
-                    List<IMBEClass> classList = extractedTable.AddEmptyEntry(table.Name());
-                    uint tableHeaderSize = 0x0C + table.NameSize() + Align(table.NameSize() + 4, 8);
-                    PropertyInfo[] formatProperties = format.GetProperties();
-
-                    // Read data
-                    for (uint i = 0; i < table.EntryCount(); i++)
-                    {
-                        // Dynamically create an instance of the type represented by 'format'
-                        var instance = Activator.CreateInstance(format) ?? throw new Exception(filename + " - Error: Unable to create an instance of the format type.");
-                        if (instance is not IMBEClass mbeClassInstance)
-                            throw new Exception($"Error: Instance of {format.Name} does not implement IMBEClass interface.");
-                        classList.Add(mbeClassInstance);
-                        int localOffset = (int)(table.Offset + i * (table.EntrySize() + Align(table.EntrySize(), 8)) + tableHeaderSize);
-
-                        foreach (var prop in formatProperties)
-                        {
-                            string type = Utils.NormalizeType(prop.PropertyType);
-                            string value = ReadEXPAEntry(data, ref localOffset, type);
-                            switch (type)
-                            {
-                                case "string":
-                                    // Handle string type
-                                    prop.SetValue(instance, value); // Trim null terminators
-                                    break;
-                                case "float":
-                                    // Convert string to float
-                                    prop.SetValue(instance, float.Parse(value, CultureInfo.InvariantCulture));
-                                    break;
-                                case "int":
-                                    // Convert string to int
-                                    prop.SetValue(instance, int.Parse(value));
-                                    break;
-                                case "byte":
-                                    // Convert string to byte
-                                    prop.SetValue(instance, byte.Parse(value));
-                                    break;
-                                case "short":
-                                    // Convert string to short
-                                    prop.SetValue(instance, short.Parse(value));
-                                    break;
-                                default:
-                                    prop.SetValue(instance, value);
-                                    break;
-                            }
-                        }
-                    }
-                }
-                return extractedTable;
-                
+                Buffer.BlockCopy(BitConverter.GetBytes(ptr), 0, data, (int)dataOffset, 8);
+                offset += (size + 8);
             }
         }
 
-        private static string ReadEXPAEntry(byte[] data, ref int offset, string type)
+        private static MBETable PopulateMbeTable(byte[] data, List<EXPATable> tables,Type structureType)
+        {
+            var mbeTable = new MBETable();
+
+
+            // Process each table
+            foreach (EXPATable table in tables)
+            {
+                List<IMBEClass> classList = mbeTable.AddEmptyEntry(table.Name());
+                uint tableHeaderSize = 0x0C + table.NameSize() + Align(table.NameSize() + 4, 8);
+                PropertyInfo[] formatProperties = structureType.GetProperties();
+
+                // Read data
+                for (uint i = 0; i < table.EntryCount(); i++)
+                {
+                    // Dynamically create an instance of the type represented by 'structureType'
+                    var instance = Activator.CreateInstance(structureType) ?? throw new InvalidOperationException("Error: Unable to create an instance of the structureType type.");
+                    if (instance is not IMBEClass mbeClassInstance)
+                        throw new Exception($"Error: Instance of {structureType.Name} does not implement IMBEClass interface.");
+                    classList.Add(mbeClassInstance);
+                    int localOffset = (int)(table.Offset + i * (table.EntrySize() + Align(table.EntrySize(), 8)) + tableHeaderSize);
+
+                    foreach (var prop in formatProperties)
+                    {
+                        string type = Utils.NormalizeType(prop.PropertyType);
+                        string value = ReadEXPAEntry(data, ref localOffset, type);
+                        switch (type)
+                        {
+                            case "string":
+                                // Handle string type
+                                prop.SetValue(instance, value); // Trim null terminators
+                                break;
+                            case "float":
+                                // Convert string to float
+                                prop.SetValue(instance, float.Parse(value, CultureInfo.InvariantCulture));
+                                break;
+                            case "int":
+                                // Convert string to int
+                                prop.SetValue(instance, int.Parse(value));
+                                break;
+                            case "byte":
+                                // Convert string to byte
+                                prop.SetValue(instance, byte.Parse(value));
+                                break;
+                            case "short":
+                                // Convert string to short
+                                prop.SetValue(instance, short.Parse(value));
+                                break;
+                            default:
+                                prop.SetValue(instance, value);
+                                break;
+                        }
+                    }
+                }
+            }
+            return mbeTable;
+        }
+
+
+        protected static string ReadEXPAEntry(byte[] data, ref int offset, string type)
         {
             try
             {
@@ -341,6 +343,37 @@ namespace DSCSTools
                 Array.Fill(padding, PADDING_BYTE);
                 writer.Write(padding);
                 currentSize += paddingSize;
+            }
+        }
+        public static MBETable ProcessMBE(string sourcePath)
+        {
+            
+            using (var input = new BinaryReader(File.OpenRead(sourcePath)))
+            {
+                var data = input.ReadBytes((int)input.BaseStream.Length);
+
+
+                EXPAHeader header = ReadExpaHeader(data);
+
+                uint offset = 8; // Skip header (8 bytes)
+
+                List<EXPATable> tables = ReadExpaTables(data, ref offset, header);
+
+                // Read CHNK Header
+                CHNKHeader chunkHeader = ReadChnkHeader(data, offset);
+
+                offset += 8;
+
+                ProcessCHNKEntries(data,ref offset, chunkHeader);
+
+                // Get structure 
+                Type structureType = GetStructureType(sourcePath);
+                string filename = Path.GetFileName(sourcePath);
+
+                var extractedTable = PopulateMbeTable(data, tables, structureType);
+
+                return extractedTable;
+
             }
         }
 
