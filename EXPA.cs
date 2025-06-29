@@ -26,13 +26,13 @@ namespace DSCSTools
         private const string TEXT_PARA_REGEX = @"(tut.*title|yes.no.*|(eden|mi|mu).*_text$)";
         private const UInt32 EXPA_MAGIC = 0x41505845; // "EXPA"
         private const UInt32 CHNK_MAGIC = 0x4B4E4843; // "CHNK"
-        public struct EXPAHeader
+        internal protected struct EXPAHeader
         {
             public uint MagicValue;
             public uint NumTables;
         }
 
-        public class EXPATable
+        internal protected class EXPATable
         {
             public required byte[] TablePtr;
             public int Offset;
@@ -43,7 +43,7 @@ namespace DSCSTools
             public uint EntryCount() => BitConverter.ToUInt32(TablePtr, Offset + (int)NameSize() + 8);
         }
 
-        public struct CHNKHeader
+        internal protected struct CHNKHeader
         {
             public uint MagicValue;
             public uint NumEntry;
@@ -128,11 +128,11 @@ namespace DSCSTools
                         {
                             if (entry is Message message)
                             {
-                                messages.Add(message.ToPatch(Path.GetFileName(sourcePath)));
+                                messages.Add(message.ToPatch(Global.ExportLanguages, Path.GetFileName(sourcePath)));
                             }
                             else if (entry is Text text)
                             {
-                                messages.Add(text.ToPatch(Path.GetFileName(sourcePath)));
+                                messages.Add(text.ToPatch(Global.ExportLanguages));
                             }
                             else
                             {

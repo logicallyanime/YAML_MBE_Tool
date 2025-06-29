@@ -106,24 +106,33 @@ namespace DSCSTools
 
             if (options.Lang != null)
             {
-                Global.ExportLanguages = [.. options.Lang.Select(lang => lang.ToLowerInvariant())];
+                if(options.Lang.Count() != 0)
+                    options.Lang = [.. options.Lang.Select(lang => lang.ToLowerInvariant())];
+                else
+                    options.Lang = ["eng", "jpn"]; // Default languages if none specified
             }
+
+            options.TargetFolder ??= string.Empty;
+
+            // Use WriteVerbose extension with color instead of direct Console calls.
+            $"[INFO] Input Path: {options.Source}".WriteVerbose(ConsoleColor.Yellow);
+
+            $"[STEP 1] Validating input path... {options.Source}".WriteVerbose(ConsoleColor.Green);
+
+            if (!Directory.Exists(options.Source) && (!File.Exists(options.Source) || !Path.GetExtension(options.Source).Equals(".mbe", StringComparison.CurrentCultureIgnoreCase)))
+                throw new FileNotFoundException("Error: Source must be a valid .mbe file or a directory containing .mbe files.");
+
             if (string.IsNullOrEmpty(options.TargetFolder))
             {
                 options.TargetFolder = Path.GetDirectoryName(options.Source) + "\\Converted";
 
-            }
-            Directory.CreateDirectory(options.TargetFolder);
-            // Use WriteVerbose extension with color instead of direct Console calls.
-            $"[INFO] Input Path: {options.Source}".WriteVerbose(ConsoleColor.Yellow);
-
-            if (!Directory.Exists(options.Source) && !File.Exists(options.Source))
-                throw new ArgumentException($"Error: input path \"{options.Source}\" does not exist.");
-
-            $"[STEP 1] Validating input path... {options.Source}".WriteVerbose(ConsoleColor.Green);
+            } else if (File.Exists(options.TargetFolder))
+                throw new ArgumentException($"Error: Target path \"{options.TargetFolder}\" is a file, must be a directory.");
 
             if (Path.GetFullPath(options.Source) == Path.GetFullPath(options.TargetFolder))
                 throw new ArgumentException("Error: input and output paths must be different!");
+
+            Directory.CreateDirectory(options.TargetFolder);
 
             $"[STEP 2] Paths validated successfully.".WriteVerbose(ConsoleColor.Green);
 
@@ -131,16 +140,18 @@ namespace DSCSTools
             {
                 $"[DIRECTORY] Processing directory: {options.Source}".WriteLineColored(ConsoleColor.Blue);
                 string[] files = Directory.GetFiles(options.Source);
+
                 ConsoleProgress.ProgressBar progressBar = new(files.Length);
                 int processedCount = 0;
+
                 if (Global.Multithreading)
                 {
                     Parallel.ForEach(files, file =>
                     {
                         // Use a local variable to avoid race conditions
                         $"[FILE] Processing file: {file}".WriteVerbose(ConsoleColor.Magenta);
-                        MBETable localTable = EXPA.ParseYAML(file);
-                        EXPA.PackMBETable(localTable, file, options.TargetFolder);
+                        ExtractSingleMBEFile(file, options);
+
                         int count = Interlocked.Increment(ref processedCount);
                         progressBar.Report(count);
                     });
@@ -150,7 +161,8 @@ namespace DSCSTools
                     foreach (var file in files)
                     {
                         $"[FILE] Processing file: {file}".WriteVerbose(ConsoleColor.Magenta);
-                        EXPA.SaveYamlObj(file, options.TargetFolder);
+                        ExtractSingleMBEFile(file, options);
+
                         processedCount++;
                         progressBar.Report(processedCount);
                     }
@@ -159,19 +171,40 @@ namespace DSCSTools
             else if (File.Exists(options.Source))
             {
                 $"[FILE] Processing single file: {options.Source}".WriteLineColored(ConsoleColor.Blue);
-                EXPA.SaveYamlObj(options.Source, options.TargetFolder);
+                ExtractSingleMBEFile(options);
             }
             else
             {
                 $"[ERROR] The source path is neither a directory nor a file: {options.Source}".WriteLineColored(ConsoleColor.Red);
                 throw new ArgumentException("Error: input is neither directory nor file.");
             }
-            $"[INFO] Extracting completed successfully. Output written to {options.TargetFolder}".WriteLineColored(ConsoleColor.Green);
+            $"[INFO] Extracting completed successfully. Output written to \"{options.TargetFolder}\"".WriteLineColored(ConsoleColor.Green);
             Console.WriteLine("Done");
 
             return 0;
         }
 
+        private static void ExtractSingleMBEFile(ExtractOptions options)
+        {
+            MBE.Reader mbeReader = new(options.Source);
+            MBE.File mbeFile = mbeReader.Read();
+            string yaml = MBE.Converter.ToYaml(mbeFile, options.Source, bool.Parse(options.isPatch), [.. options.Lang!]);
+            var outputPath = Path.Combine(options.TargetFolder!, $"./{Path.GetFileNameWithoutExtension(options.Source)}.yaml");
+            using var output = new StreamWriter(outputPath);
+            output.Write(yaml);
+        }
+        private static void ExtractSingleMBEFile(string source, ExtractOptions options)
+        {
+            MBE.Reader mbeReader = new(source);
+            MBE.File mbeFile = mbeReader.Read();
+
+            string yaml = MBE.Converter.ToYaml(mbeFile, source, bool.Parse(options.isPatch), [.. options.Lang!]);
+
+            var outputPath = Path.Combine(options.TargetFolder!, $"./{Path.GetFileNameWithoutExtension(source)}.yaml");
+            using var output = new StreamWriter(outputPath);
+
+            output.Write(yaml);
+        }
 
         static int PackMBE(PackOptions options)
         {

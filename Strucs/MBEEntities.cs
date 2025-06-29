@@ -11,8 +11,10 @@ namespace DSCS_MBE_Tool.Strucs
 
     public interface IMBEClass
     {
-        // Add common properties/methods if needed
-        // (can be empty if you just need type marking)
+        // Add common properties/methods if needed  
+        // (can be empty if you just need type marking)  
+
+        dynamic ToPatch(List<string> lang, string source = "");
     }
 
     public class MBETable
