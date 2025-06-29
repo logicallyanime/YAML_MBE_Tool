@@ -226,8 +226,7 @@ namespace DSCSTools
                     {
                         // Use a local variable to avoid race conditions
                         $"[FILE] Processing file: {file}".WriteVerbose(ConsoleColor.Magenta);
-                        MBETable localTable = EXPA.ParseYAML(file);
-                        EXPA.PackMBETable(localTable, file, options.TargetFolder);
+                        PackSingleMBEFile(file, options);
                         int count = Interlocked.Increment(ref processedCount);
                         progressBar.Report(count);
                     });
@@ -237,8 +236,7 @@ namespace DSCSTools
                     foreach (var file in files)
                     {
                         $"[FILE] Processing file: {file}".WriteVerbose(ConsoleColor.Magenta);
-                        mbeTable = EXPA.ParseYAML(file);
-                        EXPA.PackMBETable(mbeTable, file, options.TargetFolder);
+                        PackSingleMBEFile(file, options);
                         processedCount++;
                         progressBar.Report(processedCount);
                     }
@@ -247,8 +245,9 @@ namespace DSCSTools
             else if (File.Exists(options.Source))
             {
                 $"[FILE] Processing single file: {options.Source}".WriteLineColored(ConsoleColor.Blue);
-                mbeTable = EXPA.ParseYAML(options.Source);
-                EXPA.PackMBETable(mbeTable, options.Source, options.TargetFolder);
+                PackSingleMBEFile(options);
+                //mbeTable = EXPA.ParseYAML(options.Source);
+                //EXPA.PackMBETable(mbeTable, options.Source, options.TargetFolder);
             }
             else
             {
@@ -258,6 +257,18 @@ namespace DSCSTools
             $"[INFO] Packing completed successfully. Output written to {options.TargetFolder}".WriteLineColored(ConsoleColor.Green);
             Console.WriteLine("Done");
             return 0;
+        }
+        private static void PackSingleMBEFile(string source, PackOptions options)
+        {
+            MBE.File mbeFile = MBE.Converter.FromYamlFile(source, bool.Parse(options.isPatch));
+            MBE.Writer mbeWriter = new(mbeFile, source);
+            mbeWriter.Write(options.TargetFolder!);
+        }
+        private static void PackSingleMBEFile(PackOptions options)
+        {
+            MBE.File mbeFile = MBE.Converter.FromYamlFile(options.Source, bool.Parse(options.isPatch));
+            MBE.Writer mbeWriter = new(mbeFile, options.Source);
+            mbeWriter.Write(options.TargetFolder!);
         }
 
         public static void PrintUsage()

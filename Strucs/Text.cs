@@ -151,48 +151,20 @@ namespace DSCS_MBE_Tool.Strucs
         public required string id { get; set; }
         public required Dictionary<string, string> msg { get; set; }
 
-
-        public Text ToText()
+        public static explicit operator Text(PatchText patchText)
         {
-            string jpn = "";
-            string eng = "";
-            string zho = "";
-            string engc = "";
-            string kor = "";
-            string ger = "";
+            Language msgLanguage = new(patchText.msg);
 
-            foreach (var kvp in msg)
-            {
-                var jpKeys = new HashSet<string> { "ja", "jp", "jpn" };
-                var enKeys = new HashSet<string> { "us", "usa", "en", "eng" };
-                var zhKeys = new HashSet<string> { "cn", "chn", "zh", "zho", "cdo", "cjy", "cmn", "cnp", "csp", "czh", "czo", "gan", "hak", "hnm", "hsn", "luh", "lzh", "mnp", "nan", "sjc", "wuu", "yue", "dng" };
-                var engcKeys = new HashSet<string> { "engc", "eng_censored" };
-                var koKeys = new HashSet<string> { "kor", "ko", "kp" };
-                var deKeys = new HashSet<string> { "ger", "de", "deu" };
 
-                var key = kvp.Key.ToLowerInvariant();
-                if (jpKeys.Contains(key))
-                    jpn = kvp.Value;
-                else if (enKeys.Contains(key))
-                    eng = kvp.Value;
-                else if (zhKeys.Contains(key))
-                    zho = kvp.Value;
-                else if (engcKeys.Contains(key))
-                    engc = kvp.Value;
-                else if (koKeys.Contains(key))
-                    kor = kvp.Value;
-                else if (deKeys.Contains(key))
-                    ger = kvp.Value;
-            }
-            Text text = new Text
+            Text text = new()
             {
-                ID = int.Parse(id),
-                Japanese = jpn,
-                English = eng,
-                Chinese = zho,
-                EnglishCensored = engc,
-                Korean = kor,
-                German = ger
+                ID = int.Parse(patchText.id),
+                Japanese = msgLanguage.Japanese,
+                English = msgLanguage.English,
+                Chinese = msgLanguage.Chinese,
+                EnglishCensored = msgLanguage.EnglishCensored,
+                Korean = msgLanguage.Korean,
+                German = msgLanguage.German
             };
             return text;
         }
@@ -244,7 +216,7 @@ namespace DSCS_MBE_Tool.Strucs
             string? name = NameDB.GetName(Speaker)?.eng ?? "undefined";
 
 
-            PatchMessage patchMessage = new PatchMessage
+            PatchMessage patchMessage = new()
             {
                 id = ID.ToString(),
                 speakerId = Speaker,
@@ -277,15 +249,15 @@ namespace DSCS_MBE_Tool.Strucs
         { get; set; }
 
 
-        public Message ToMessage()
+        public static explicit operator Message(PatchMessage patchMessage)
         {
-            Language msgLanguage = new Language(msg);
+            Language msgLanguage = new(patchMessage.msg);
 
 
-            Message message = new Message
+            Message message = new()
             {
-                ID = int.Parse(id),
-                Speaker = speakerId,
+                ID = int.Parse(patchMessage.id),
+                Speaker = patchMessage.speakerId,
                 Japanese = msgLanguage.Japanese,
                 English = msgLanguage.English,
                 Chinese = msgLanguage.Chinese,
